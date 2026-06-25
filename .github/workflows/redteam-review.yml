@@ -1,0 +1,56 @@
+name: Redteam Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  redteam-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Fetch base branch
+        run: git fetch origin "${{ github.base_ref }}" --depth=1
+
+      - name: Run level 3 auto-merge guard
+        run: |
+          python scripts/auto_merge_guard.py \
+            --base-ref "origin/${{ github.base_ref }}" \
+            --head-ref HEAD \
+            --base-branch "${{ github.base_ref }}" \
+            --head-branch "${{ github.head_ref }}" \
+            --output "$RUNNER_TEMP/auto-merge-guard.json" \
+            --summary-md "$RUNNER_TEMP/auto-merge-guard.md"
+
+      - name: Run required redteam review
+        run: |
+          python scripts/redteam_review.py \
+            --guard-report "$RUNNER_TEMP/auto-merge-guard.json" \
+            --base-ref "origin/${{ github.base_ref }}" \
+            --head-ref HEAD \
+            --output "$RUNNER_TEMP/redteam-review.json" \
+            --summary-md "$RUNNER_TEMP/redteam-review.md"
+
+      - name: Comment redteam summary
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo "<!-- repo-health-bot-redteam-review -->"
+            cat "$RUNNER_TEMP/auto-merge-guard.md"
+            echo
+            cat "$RUNNER_TEMP/redteam-review.md"
+          } > "$RUNNER_TEMP/redteam-comment.md"
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file "$RUNNER_TEMP/redteam-comment.md"

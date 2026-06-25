@@ -13,3 +13,5 @@
 - 넓은 범위의 리팩터링을 하지 않습니다.
 - PR은 draft로 생성합니다.
 - PR 본문에는 선택한 개선점과 검증 결과를 한국어로 설명합니다.
+- Level 3 자동 merge는 `CI`, `Auto Merge Guard`, `Redteam Review`가 모두 통과한 PR에만 허용합니다.
+- 자동 merge 정책, redteam 스크립트, GitHub workflow를 바꾸는 PR은 자동 merge하지 않고 수동 검토 대상으로 둡니다.

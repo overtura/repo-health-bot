@@ -1,0 +1,92 @@
+name: Auto Merge
+
+on:
+  workflow_run:
+    workflows: ["CI", "Redteam Review"]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  checks: read
+  actions: read
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    steps:
+      - name: Resolve pull request number
+        id: pr
+        run: |
+          PR_NUMBER="$(python -c "import json, os; event=json.load(open(os.environ['GITHUB_EVENT_PATH'], encoding='utf-8')); prs=event.get('workflow_run', {}).get('pull_requests', []); print(prs[0]['number'] if prs else '')")"
+          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+
+      - name: Stop when no PR is attached
+        if: steps.pr.outputs.number == ''
+        run: echo "No pull request attached to this workflow_run event."
+
+      - uses: actions/checkout@v5
+        if: steps.pr.outputs.number != ''
+        with:
+          fetch-depth: 0
+
+      - name: Check out PR branch
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr checkout "${{ steps.pr.outputs.number }}"
+
+      - uses: actions/setup-python@v6
+        if: steps.pr.outputs.number != ''
+        with:
+          python-version: "3.13"
+
+      - name: Evaluate merge gates
+        id: decision
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr view "${{ steps.pr.outputs.number }}" \
+            --json isDraft,headRefName,baseRefName,mergeStateStatus,statusCheckRollup \
+            > "$RUNNER_TEMP/pr.json"
+
+          BASE_BRANCH="$(python -c "import json, os; print(json.load(open(os.environ['RUNNER_TEMP'] + '/pr.json', encoding='utf-8'))['baseRefName'])")"
+          HEAD_BRANCH="$(python -c "import json, os; print(json.load(open(os.environ['RUNNER_TEMP'] + '/pr.json', encoding='utf-8'))['headRefName'])")"
+
+          git fetch origin "$BASE_BRANCH" --depth=1
+
+          python scripts/auto_merge_guard.py \
+            --base-ref "origin/$BASE_BRANCH" \
+            --head-ref HEAD \
+            --base-branch "$BASE_BRANCH" \
+            --head-branch "$HEAD_BRANCH" \
+            --output "$RUNNER_TEMP/auto-merge-guard.json" || true
+
+          python scripts/merge_decision.py \
+            --pr-json "$RUNNER_TEMP/pr.json" \
+            --guard-report "$RUNNER_TEMP/auto-merge-guard.json" \
+            --required-check test \
+            --required-check redteam-review \
+            --output "$RUNNER_TEMP/merge-decision.json"
+
+          SHOULD_MERGE="$(python -c "import json, os; print(str(json.load(open(os.environ['RUNNER_TEMP'] + '/merge-decision.json', encoding='utf-8'))['should_merge']).lower())")"
+          echo "should_merge=$SHOULD_MERGE" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/merge-decision.json"
+
+      - name: Squash merge approved PR
+        if: steps.pr.outputs.number != '' && steps.decision.outputs.should_merge == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr ready "${{ steps.pr.outputs.number }}" || true
+          gh pr merge "${{ steps.pr.outputs.number }}" \
+            --squash \
+            --delete-branch \
+            --subject "자동 merge: Redteam 승인 PR #${{ steps.pr.outputs.number }}" \
+            --body "CI, Level 3 guard, Redteam Review를 모두 통과해 자동 merge했습니다."
+
+      - name: Report skipped auto merge
+        if: steps.pr.outputs.number != '' && steps.decision.outputs.should_merge != 'true'
+        run: echo "Auto merge skipped. See merge decision output above."

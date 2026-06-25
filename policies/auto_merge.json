@@ -1,0 +1,31 @@
+{
+  "level": 3,
+  "max_changed_files": 20,
+  "max_total_additions": 1200,
+  "max_total_deletions": 800,
+  "allow_binary_files": false,
+  "allowed_base_branches": ["main"],
+  "auto_merge_head_prefixes": [
+    "codex/",
+    "self-improve/"
+  ],
+  "deny_patterns": [
+    ".env",
+    ".env.*",
+    "**/*.pem",
+    "**/*.key",
+    "**/*.p12",
+    "**/*.pfx",
+    "**/id_rsa",
+    "**/id_ed25519",
+    "**/.npmrc",
+    "**/.pypirc"
+  ],
+  "manual_review_patterns": [
+    ".github/workflows/**",
+    "policies/auto_merge.json",
+    "scripts/auto_merge_guard.py",
+    "scripts/merge_decision.py",
+    "scripts/redteam_review.py"
+  ]
+}

@@ -96,3 +96,23 @@ gh -R okorion/repo-health-bot pr checks PR_NUMBER
 - 생성된 PR은 draft로 시작합니다.
 - 검증 실패 시 PR을 만들지 않거나, 실패 사실을 명확히 남깁니다.
 - 사람이 리뷰한 뒤 merge합니다.
+
+## Level 3 자동 merge 모드
+
+테스트 repo에서는 Level 3 자동 merge 모드를 사용할 수 있습니다. 이 모드에서는 PR을 사람이 직접 merge하지 않아도, 아래 조건을 모두 만족하면 GitHub Actions가 squash merge를 시도합니다.
+
+1. `CI / test` check가 성공합니다.
+2. `Redteam Review / redteam-review` check가 성공합니다.
+3. `scripts/auto_merge_guard.py`가 정책 위반을 찾지 않습니다.
+4. `policies/auto_merge.json` 기준으로 자동 merge 허용 범위에 들어옵니다.
+5. PR에 merge conflict가 없습니다.
+
+Level 3 정책은 넓은 코드 변경을 허용하지만, 자동 merge 시스템 자체를 바꾸는 변경은 자동으로 merge하지 않습니다. 다음 경로는 redteam과 CI를 통과해도 수동 검토 대상으로 분류됩니다.
+
+- `.github/workflows/**`
+- `policies/auto_merge.json`
+- `scripts/auto_merge_guard.py`
+- `scripts/redteam_review.py`
+- `scripts/merge_decision.py`
+
+즉, 일반 기능/문서/테스트 개선은 자동 merge 실험 대상이지만, 자동 merge 장치를 약화하거나 우회할 수 있는 변경은 사람이 확인해야 합니다.
