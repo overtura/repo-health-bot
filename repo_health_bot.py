@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -47,6 +48,8 @@ METADATA_FILES = [
     "Cargo.toml",
     "LICENSE",
 ]
+
+TODO_PATTERN = re.compile(r"\b(?:TODO|FIXME)\b", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -102,8 +105,7 @@ def analyze_repository(root: Path) -> HealthReport:
         lines = content.splitlines()
         line_count += len(lines)
         for index, line in enumerate(lines, start=1):
-            upper = line.upper()
-            if "TODO" in upper or "FIXME" in upper:
+            if TODO_PATTERN.search(line):
                 todo_hits.append(
                     TodoHit(
                         path=path.relative_to(root).as_posix(),
@@ -160,4 +162,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
