@@ -125,6 +125,31 @@ def analyze_repository(root: Path) -> HealthReport:
     )
 
 
+def repository_directory(value: str) -> Path:
+    path = Path(value)
+    try:
+        if not path.exists():
+            raise argparse.ArgumentTypeError(f"path does not exist: {value!r}")
+        if not path.is_dir():
+            raise argparse.ArgumentTypeError(f"path is not a directory: {value!r}")
+    except OSError as exc:
+        raise argparse.ArgumentTypeError(f"invalid path: {value!r}: {exc}") from exc
+    return path
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Generate a small repository health report.")
+    parser.add_argument(
+        "path",
+        nargs="?",
+        default=".",
+        type=repository_directory,
+        help="Repository directory to scan.",
+    )
+    parser.add_argument("--json", action="store_true", help="Print JSON instead of Markdown.")
+    return parser
+
+
 def to_markdown(report: HealthReport) -> str:
     lines = [
         "# Repository Health Report",
@@ -150,12 +175,10 @@ def main() -> None:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
 
-    parser = argparse.ArgumentParser(description="Generate a small repository health report.")
-    parser.add_argument("path", nargs="?", default=".", help="Repository path to scan.")
-    parser.add_argument("--json", action="store_true", help="Print JSON instead of Markdown.")
+    parser = build_parser()
     args = parser.parse_args()
 
-    report = analyze_repository(Path(args.path))
+    report = analyze_repository(args.path)
     if args.json:
         print(json.dumps(asdict(report), indent=2, ensure_ascii=False))
     else:

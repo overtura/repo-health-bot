@@ -1,8 +1,10 @@
+import contextlib
+import io
 import tempfile
 import unittest
 from pathlib import Path
 
-from repo_health_bot import analyze_repository, to_markdown
+from repo_health_bot import analyze_repository, build_parser, to_markdown
 
 
 class RepoHealthBotTest(unittest.TestCase):
@@ -31,6 +33,36 @@ class RepoHealthBotTest(unittest.TestCase):
 
             self.assertIn("# Repository Health Report", markdown)
             self.assertIn("Metadata files: README.md", markdown)
+
+    def test_parser_rejects_missing_path(self) -> None:
+        parser = build_parser()
+        stderr = io.StringIO()
+
+        with (
+            contextlib.redirect_stderr(stderr),
+            self.assertRaises(SystemExit) as caught,
+        ):
+            parser.parse_args(["does-not-exist"])
+
+        self.assertEqual(caught.exception.code, 2)
+        self.assertIn("path does not exist", stderr.getvalue())
+
+    def test_parser_rejects_file_path(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tmp_path = Path(temp_dir)
+            readme_path = tmp_path / "README.md"
+            readme_path.write_text("# Demo\n", encoding="utf-8")
+            parser = build_parser()
+            stderr = io.StringIO()
+
+            with (
+                contextlib.redirect_stderr(stderr),
+                self.assertRaises(SystemExit) as caught,
+            ):
+                parser.parse_args([str(readme_path)])
+
+            self.assertEqual(caught.exception.code, 2)
+            self.assertIn("path is not a directory", stderr.getvalue())
 
 
 if __name__ == "__main__":
