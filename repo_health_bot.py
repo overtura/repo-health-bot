@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -146,6 +147,9 @@ def to_markdown(report: HealthReport) -> str:
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
     parser = argparse.ArgumentParser(description="Generate a small repository health report.")
     parser.add_argument("path", nargs="?", default=".", help="Repository path to scan.")
     parser.add_argument("--json", action="store_true", help="Print JSON instead of Markdown.")
@@ -160,4 +164,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
