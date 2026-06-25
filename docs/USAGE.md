@@ -78,6 +78,7 @@ JSON에는 다음 필드가 들어 있습니다.
 변경 후에는 다음 명령을 실행합니다.
 
 ```bash
+git diff --check
 python -m unittest discover -s tests
 python repo_health_bot.py .
 python repo_health_bot.py . --json
@@ -88,3 +89,17 @@ PowerShell 검증 스크립트도 사용할 수 있습니다.
 ```powershell
 .\.codex\self-improve\run-checks.ps1
 ```
+
+각 명령은 다음을 확인합니다.
+
+- `git diff --check`: trailing whitespace나 잘못된 공백 변경이 없는지 확인합니다.
+- `python -m unittest discover -s tests`: 기존 단위 테스트가 통과하는지 확인합니다.
+- `python repo_health_bot.py .`: Markdown 리포트가 정상 생성되는지 확인합니다.
+- `python repo_health_bot.py . --json`: 자동화에서 쓰는 JSON 출력이 정상 생성되는지 확인합니다.
+
+로컬에서 문제가 나면 먼저 다음 항목을 확인하세요.
+
+- `python` 명령이 Python 3.10 이상을 가리키는지 확인합니다. Windows에서 여러 Python이 설치되어 있으면 `py -3.10`처럼 버전을 지정해 실행할 수 있습니다.
+- `ModuleNotFoundError`가 나면 저장소 루트에서 명령을 실행 중인지 확인하고, 필요하면 `python -m pip install -e .`로 다시 설치합니다.
+- PowerShell 스크립트 실행이 차단되면 현재 터미널에서만 `Set-ExecutionPolicy -Scope Process Bypass`를 실행한 뒤 다시 시도합니다.
+- 테스트가 임시 파일 경로 문제로 실패하면 `TEMP`와 `TMP`가 쓰기 가능한 로컬 폴더를 가리키는지 확인합니다.
