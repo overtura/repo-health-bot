@@ -97,6 +97,42 @@ class AutoMergePolicyTest(unittest.TestCase):
 
         self.assertTrue(decision["should_merge"])
 
+    def test_merge_decision_blocks_guard_without_manual_reasons(self) -> None:
+        pr = {
+            "isDraft": True,
+            "headRefName": "codex/example",
+            "baseRefName": "main",
+            "mergeStateStatus": "CLEAN",
+            "statusCheckRollup": [
+                {
+                    "name": "test",
+                    "workflowName": "CI",
+                    "status": "COMPLETED",
+                    "conclusion": "SUCCESS",
+                },
+                {
+                    "name": "redteam-review",
+                    "workflowName": "Redteam Review",
+                    "status": "COMPLETED",
+                    "conclusion": "SUCCESS",
+                },
+            ],
+        }
+        guard_report = {
+            "passed": True,
+            "auto_merge_allowed": False,
+            "manual_reasons": [],
+        }
+
+        decision = merge_decision.decide(
+            pr,
+            guard_report,
+            required_checks=["test", "redteam-review"],
+        )
+
+        self.assertFalse(decision["should_merge"])
+        self.assertIn("auto-merge guard requires manual review", decision["reasons"])
+
     def test_merge_decision_blocks_merge_conflicts(self) -> None:
         pr = {
             "isDraft": True,

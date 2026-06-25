@@ -29,7 +29,8 @@ def decide(pr: dict[str, Any], guard: dict[str, Any], required_checks: list[str]
         reasons.append("auto-merge guard did not pass")
 
     if not guard.get("auto_merge_allowed", False):
-        reasons.extend(guard.get("manual_reasons", ["auto-merge guard requires manual review"]))
+        manual_reasons = guard.get("manual_reasons") or ["auto-merge guard requires manual review"]
+        reasons.extend(manual_reasons)
 
     missing_checks = [check for check in required_checks if check not in successes]
     if missing_checks:
