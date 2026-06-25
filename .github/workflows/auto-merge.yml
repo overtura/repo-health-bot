@@ -26,25 +26,45 @@ jobs:
         if: steps.pr.outputs.number == ''
         run: echo "No pull request attached to this workflow_run event."
 
-      - uses: actions/checkout@v5
+      - name: Inspect pull request state
+        id: pr_state
         if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr view "${{ steps.pr.outputs.number }}" --json state,mergedAt,headRefName \
+            > "$RUNNER_TEMP/pr-state.json"
+          STATE="$(python -c "import json, os; print(json.load(open(os.environ['RUNNER_TEMP'] + '/pr-state.json', encoding='utf-8'))['state'])")"
+          echo "state=$STATE" >> "$GITHUB_OUTPUT"
+          if [ "$STATE" = "OPEN" ]; then
+            echo "open=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "open=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stop when PR is already closed
+        if: steps.pr.outputs.number != '' && steps.pr_state.outputs.open != 'true'
+        run: echo "Pull request is ${{ steps.pr_state.outputs.state }}. Auto merge is no longer needed."
+
+      - uses: actions/checkout@v5
+        if: steps.pr.outputs.number != '' && steps.pr_state.outputs.open == 'true'
         with:
           fetch-depth: 0
 
       - name: Check out PR branch
-        if: steps.pr.outputs.number != ''
+        if: steps.pr.outputs.number != '' && steps.pr_state.outputs.open == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh pr checkout "${{ steps.pr.outputs.number }}"
 
       - uses: actions/setup-python@v6
-        if: steps.pr.outputs.number != ''
+        if: steps.pr.outputs.number != '' && steps.pr_state.outputs.open == 'true'
         with:
           python-version: "3.13"
 
       - name: Evaluate merge gates
         id: decision
-        if: steps.pr.outputs.number != ''
+        if: steps.pr.outputs.number != '' && steps.pr_state.outputs.open == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -76,7 +96,7 @@ jobs:
           cat "$RUNNER_TEMP/merge-decision.json"
 
       - name: Squash merge approved PR
-        if: steps.pr.outputs.number != '' && steps.decision.outputs.should_merge == 'true'
+        if: steps.pr.outputs.number != '' && steps.pr_state.outputs.open == 'true' && steps.decision.outputs.should_merge == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -88,5 +108,5 @@ jobs:
             --body "CI, Level 3 guard, Redteam Review를 모두 통과해 자동 merge했습니다."
 
       - name: Report skipped auto merge
-        if: steps.pr.outputs.number != '' && steps.decision.outputs.should_merge != 'true'
+        if: steps.pr.outputs.number != '' && steps.pr_state.outputs.open == 'true' && steps.decision.outputs.should_merge != 'true'
         run: echo "Auto merge skipped. See merge decision output above."
