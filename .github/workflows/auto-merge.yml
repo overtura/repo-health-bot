@@ -123,12 +123,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh pr ready "${{ steps.pr.outputs.number }}" -R "$GITHUB_REPOSITORY" || true
-          gh pr merge "${{ steps.pr.outputs.number }}" \
+          if ! gh pr merge "${{ steps.pr.outputs.number }}" \
             -R "$GITHUB_REPOSITORY" \
             --squash \
             --delete-branch \
             --subject "자동 merge: Redteam 승인 PR #${{ steps.pr.outputs.number }}" \
-            --body "CI, Level 3 guard, Redteam Review를 모두 통과해 자동 merge했습니다."
+            --body "CI, Level 3 guard, Redteam Review를 모두 통과해 자동 merge했습니다."; then
+            echo "Merge failed after approval. Updating the PR branch so required checks can rerun."
+            gh pr update-branch "${{ steps.pr.outputs.number }}" -R "$GITHUB_REPOSITORY"
+          fi
 
       - name: Report skipped auto merge
         if: steps.pr.outputs.number != '' && steps.pr_state.outputs.open == 'true' && steps.decision.outputs.should_merge != 'true'
