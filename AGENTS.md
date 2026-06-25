@@ -1,15 +1,15 @@
 # Repository Instructions
 
-This repository is used for a scheduled Codex self-improvement workflow.
+이 저장소는 Codex 자가 개선 루프를 실험하기 위한 repo입니다.
 
-Rules for automated runs:
+자동 실행 또는 주기 실행에서 지킬 규칙:
 
-- Use Korean for pull request titles, pull request bodies, run summaries, and review explanations by default.
-- Make one small, reviewable improvement per run.
-- Prefer changes covered by existing checks.
-- Do not auto-merge changes.
-- Do not edit secrets, auth, billing, deployment, infrastructure, or CI workflow files during automated improvement runs.
-- Do not add dependencies unless the change is explicitly necessary and small.
-- Do not perform broad refactors.
-- Keep pull requests draft by default.
-- Explain the selected improvement and verification in Korean in the PR body.
+- PR 제목, PR 본문, 실행 요약, 리뷰 설명은 기본적으로 한국어로 작성합니다.
+- 한 번의 실행에서는 작고 리뷰 가능한 개선 하나만 처리합니다.
+- 기존 검증으로 확인할 수 있는 변경을 우선합니다.
+- 자동 merge를 하지 않습니다.
+- 비밀값, 인증, 결제, 배포, 인프라, CI workflow 파일은 자동 개선 실행에서 수정하지 않습니다.
+- 꼭 필요한 경우가 아니라면 의존성을 추가하지 않습니다.
+- 넓은 범위의 리팩터링을 하지 않습니다.
+- PR은 draft로 생성합니다.
+- PR 본문에는 선택한 개선점과 검증 결과를 한국어로 설명합니다.
