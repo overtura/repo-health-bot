@@ -41,10 +41,10 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@v8
         with:
-          commit-message: "docs: update project status dashboard"
-          title: "docs: update project status dashboard"
+          commit-message: "docs: 프로젝트 상태 대시보드 갱신"
+          title: "문서: 프로젝트 상태 대시보드 갱신"
           body: |
-            Updates the generated project status dashboard.
+            생성된 프로젝트 상태 대시보드를 갱신합니다.
           branch: bot/status-dashboard
           add-paths: |
             docs/PROJECT_STATUS.md

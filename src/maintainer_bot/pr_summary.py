@@ -55,31 +55,31 @@ def render_static_summary(changed_files: list[ChangedFile]) -> str:
     total_deletions = sum(item.deletions for item in changed_files)
     lines = [
         MARKER,
-        "## Maintainer Bot PR Summary",
+        "## Maintainer Bot PR 요약",
         "",
-        f"- Files changed: {len(changed_files)}",
-        f"- Additions: {total_additions}",
-        f"- Deletions: {total_deletions}",
+        f"- 변경 파일 수: {len(changed_files)}",
+        f"- 추가 라인 수: {total_additions}",
+        f"- 삭제 라인 수: {total_deletions}",
         "",
-        "### Changed Files",
+        "### 변경 파일",
         "",
     ]
     if not changed_files:
-        lines.append("No file changes detected.")
+        lines.append("감지된 파일 변경이 없습니다.")
     else:
         for item in changed_files[:30]:
             lines.append(f"- `{item.path}` (+{item.additions}/-{item.deletions})")
         if len(changed_files) > 30:
-            lines.append(f"- ...and {len(changed_files) - 30} more files")
+            lines.append(f"- ...외 {len(changed_files) - 30}개 파일")
 
     lines.extend(
         [
             "",
-            "### Review Checklist",
+            "### 리뷰 체크리스트",
             "",
-            "- [ ] Eval changes are intentional and not weaker without explanation.",
-            "- [ ] Workflow permission changes are minimal.",
-            "- [ ] Generated proposal files were reviewed before merge.",
+            "- [ ] eval 변경이 의도된 것이며 설명 없이 약화되지 않았습니다.",
+            "- [ ] workflow 권한 변경이 최소 범위입니다.",
+            "- [ ] 생성된 제안 파일을 merge 전에 검토했습니다.",
         ]
     )
     return "\n".join(lines)
@@ -93,12 +93,14 @@ def render_openai_summary(
 ) -> str:
     instructions = """You summarize pull requests for maintainers.
 
+Write the summary in Korean by default. Keep commands, file paths, labels, and code identifiers unchanged.
+
 Return concise Markdown with:
 
-- Summary
-- Notable files
-- Risks
-- Verification suggestions
+- 요약
+- 주요 파일
+- 위험
+- 검증 제안
 
 Be specific. Do not claim tests passed unless the diff shows it."""
     user_input = json.dumps(
@@ -114,7 +116,7 @@ Be specific. Do not claim tests passed unless the diff shows it."""
         instructions=instructions,
         user_input=user_input,
     )
-    return f"{MARKER}\n## Maintainer Bot PR Summary\n\n{summary.strip()}\n"
+    return f"{MARKER}\n## Maintainer Bot PR 요약\n\n{summary.strip()}\n"
 
 
 def write_pr_summary(

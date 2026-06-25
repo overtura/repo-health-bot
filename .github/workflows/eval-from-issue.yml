@@ -49,13 +49,12 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@v8
         with:
-          commit-message: "eval: add case from issue #${{ github.event.issue.number }}"
-          title: "eval: add case from issue #${{ github.event.issue.number }}"
+          commit-message: "eval: 이슈 #${{ github.event.issue.number }} 기반 케이스 추가"
+          title: "eval: 이슈 #${{ github.event.issue.number }} 기반 케이스 추가"
           body: |
-            Adds a documentation QA eval case from issue #${{ github.event.issue.number }}.
+            이슈 #${{ github.event.issue.number }}에서 문서 QA eval 케이스를 추가합니다.
 
-            Review the expected and forbidden assertions before merging.
+            merge 전에 기대 assertion과 금지 assertion을 검토하세요.
           branch: bot/add-eval-${{ github.event.issue.number }}
           add-paths: |
             evals/docs_qa.jsonl
-
