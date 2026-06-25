@@ -104,11 +104,21 @@ jobs:
             --output "$RUNNER_TEMP/merge-decision.json"
 
           SHOULD_MERGE="$(python -c "import json, os; print(str(json.load(open(os.environ['RUNNER_TEMP'] + '/merge-decision.json', encoding='utf-8'))['should_merge']).lower())")"
+          MERGE_STATE="$(python -c "import json, os; print(json.load(open(os.environ['RUNNER_TEMP'] + '/pr.json', encoding='utf-8'))['mergeStateStatus'])")"
           echo "should_merge=$SHOULD_MERGE" >> "$GITHUB_OUTPUT"
+          echo "merge_state=$MERGE_STATE" >> "$GITHUB_OUTPUT"
           cat "$RUNNER_TEMP/merge-decision.json"
 
+      - name: Update approved PR branch
+        if: steps.pr.outputs.number != '' && steps.pr_state.outputs.open == 'true' && steps.decision.outputs.should_merge == 'true' && steps.decision.outputs.merge_state == 'BEHIND'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr ready "${{ steps.pr.outputs.number }}" -R "$GITHUB_REPOSITORY" || true
+          gh pr update-branch "${{ steps.pr.outputs.number }}" -R "$GITHUB_REPOSITORY"
+
       - name: Squash merge approved PR
-        if: steps.pr.outputs.number != '' && steps.pr_state.outputs.open == 'true' && steps.decision.outputs.should_merge == 'true'
+        if: steps.pr.outputs.number != '' && steps.pr_state.outputs.open == 'true' && steps.decision.outputs.should_merge == 'true' && steps.decision.outputs.merge_state != 'BEHIND'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
