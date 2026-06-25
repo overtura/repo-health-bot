@@ -1,29 +1,11 @@
-[build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "repo-health-bot"
 version = "0.1.0"
 description = "Small repository health report generator for Codex self-improvement experiments."
 requires-python = ">=3.10"
-dependencies = [
-  "openai>=1.0.0",
-]
 
 [project.scripts]
 repo-health-bot = "repo_health_bot:main"
-maintainer-bot = "maintainer_bot.cli:main"
-
-[tool.setuptools]
-py-modules = ["repo_health_bot"]
-
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
-[tool.ruff]
-line-length = 100
-target-version = "py310"

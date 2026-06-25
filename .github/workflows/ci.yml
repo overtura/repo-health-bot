@@ -15,11 +15,6 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install
-        run: |
-          python -m pip install -U pip
-          python -m pip install -e .
-
       - name: Run tests
         run: python -m unittest discover -s tests
 
@@ -27,8 +22,3 @@ jobs:
         run: |
           python repo_health_bot.py .
           python repo_health_bot.py . --json
-
-      - name: Run maintainer bot checks
-        run: |
-          python -m maintainer_bot.cli validate-evals
-          python -m maintainer_bot.cli smoke-check
