@@ -76,6 +76,11 @@ def matches_pattern(path: str, pattern: str) -> bool:
     if normalized_pattern.endswith("/**"):
         prefix = normalized_pattern[:-3]
         return normalized_path == prefix or normalized_path.startswith(f"{prefix}/")
+    if normalized_pattern.startswith("**/"):
+        root_pattern = normalized_pattern[3:]
+        return fnmatch.fnmatchcase(normalized_path, root_pattern) or fnmatch.fnmatchcase(
+            normalized_path, normalized_pattern
+        )
     return fnmatch.fnmatchcase(normalized_path, normalized_pattern)
 
 

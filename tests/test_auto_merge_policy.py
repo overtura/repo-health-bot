@@ -37,6 +37,26 @@ class AutoMergePolicyTest(unittest.TestCase):
         self.assertFalse(report["auto_merge_allowed"])
         self.assertIn("denied pattern", report["hard_failures"][0])
 
+    def test_guard_denies_root_sensitive_file_patterns(self) -> None:
+        files = [
+            guard.ChangedFile(path="secret.pem", additions=1, deletions=0),
+            guard.ChangedFile(path="id_rsa", additions=1, deletions=0),
+            guard.ChangedFile(path=".npmrc", additions=1, deletions=0),
+        ]
+
+        report = guard.evaluate_policy(
+            files=files,
+            policy=guard.DEFAULT_POLICY,
+            base_branch="main",
+            head_branch="codex/example",
+        )
+
+        self.assertFalse(report["passed"])
+        self.assertFalse(report["auto_merge_allowed"])
+        self.assertIn("secret.pem matches denied pattern **/*.pem", report["hard_failures"])
+        self.assertIn("id_rsa matches denied pattern **/id_rsa", report["hard_failures"])
+        self.assertIn(".npmrc matches denied pattern **/.npmrc", report["hard_failures"])
+
     def test_guard_marks_governance_change_as_manual(self) -> None:
         files = [guard.ChangedFile(path=".github/workflows/auto-merge.yml", additions=20, deletions=0)]
 
