@@ -51,6 +51,7 @@ METADATA_FILES = [
 ]
 
 TODO_PATTERN = re.compile(r"\b(?:TODO|FIXME)\b", re.IGNORECASE)
+REPOSITORY_PATH_HINT = "Provide a repository directory path, or omit it to scan the current directory."
 
 
 @dataclass(frozen=True)
@@ -131,11 +132,11 @@ def repository_directory(value: str) -> Path:
     path = Path(value)
     try:
         if not path.exists():
-            raise argparse.ArgumentTypeError(f"path does not exist: {value!r}")
+            raise argparse.ArgumentTypeError(f"path does not exist: {value!r}. {REPOSITORY_PATH_HINT}")
         if not path.is_dir():
-            raise argparse.ArgumentTypeError(f"path is not a directory: {value!r}")
+            raise argparse.ArgumentTypeError(f"path is not a directory: {value!r}. {REPOSITORY_PATH_HINT}")
     except OSError as exc:
-        raise argparse.ArgumentTypeError(f"invalid path: {value!r}: {exc}") from exc
+        raise argparse.ArgumentTypeError(f"invalid path: {value!r}: {exc}. {REPOSITORY_PATH_HINT}") from exc
     return path
 
 
@@ -154,10 +155,11 @@ Output:
     )
     parser.add_argument(
         "path",
+        metavar="PATH",
         nargs="?",
         default=".",
         type=repository_directory,
-        help="Repository directory to scan.",
+        help="Repository directory to scan (default: current directory).",
     )
     parser.add_argument("--json", action="store_true", help="Print JSON instead of Markdown.")
     return parser
