@@ -103,9 +103,18 @@ gh -R overtura/repo-health-bot pr checks PR_NUMBER
 
 1. `CI / test` check가 성공합니다.
 2. `Redteam Review / redteam-review` check가 성공합니다.
-3. `scripts/auto_merge_guard.py`가 정책 위반을 찾지 않습니다.
-4. `policies/auto_merge.json` 기준으로 자동 merge 허용 범위에 들어옵니다.
-5. PR에 merge conflict가 없습니다.
+3. `scripts/auto_merge_guard.py`가 hard failure를 찾지 않습니다.
+4. guard 결과의 `auto_merge_allowed`가 `true`입니다.
+5. PR의 GitHub `mergeStateStatus`가 `CLEAN`입니다.
+
+Level 3 gate는 다음 순서로 평가됩니다.
+
+1. `Redteam Review` workflow가 PR diff에 대해 `scripts/auto_merge_guard.py`를 실행합니다.
+2. guard는 `policies/auto_merge.json`을 읽어 base branch, head branch prefix, 변경 파일 수, 추가/삭제 라인 수, binary 변경, 금지 경로, 수동 검토 경로를 검사합니다.
+3. guard의 `hard_failures`가 있으면 정책 평가가 실패합니다. `manual_reasons`가 있으면 guard 자체는 실행되지만 `auto_merge_allowed`가 `false`가 되어 자동 merge 대상에서 빠집니다.
+4. `scripts/redteam_review.py`가 guard 결과와 diff를 다시 보고 `Redteam Review / redteam-review` check를 만듭니다.
+5. `Auto Merge` workflow가 `CI` 또는 `Redteam Review` 완료 이벤트에서 다시 PR 상태를 읽고 guard를 재실행한 뒤, `scripts/merge_decision.py`에 `test`와 `redteam-review`를 필수 check로 넘깁니다.
+6. `merge_decision.py`가 필수 check 성공, guard의 `passed`와 `auto_merge_allowed`, `mergeStateStatus == CLEAN`을 모두 만족할 때만 `should_merge: true`를 냅니다.
 
 Level 3 정책은 넓은 코드 변경을 허용하지만, 자동 merge 시스템 자체를 바꾸는 변경은 자동으로 merge하지 않습니다. 다음 경로는 redteam과 CI를 통과해도 수동 검토 대상으로 분류됩니다.
 
