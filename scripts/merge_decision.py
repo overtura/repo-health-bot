@@ -39,8 +39,8 @@ def decide(pr: dict[str, Any], guard: dict[str, Any], required_checks: list[str]
     merge_state = pr.get("mergeStateStatus")
     if merge_state == "DIRTY":
         reasons.append("pull request has merge conflicts")
-    elif merge_state != "CLEAN":
-        reasons.append(f"pull request merge state is {merge_state or 'missing'}; expected CLEAN")
+    elif merge_state not in {"CLEAN", "BEHIND"}:
+        reasons.append(f"pull request merge state is {merge_state or 'missing'}; expected CLEAN or BEHIND")
 
     return {
         "should_merge": not reasons,

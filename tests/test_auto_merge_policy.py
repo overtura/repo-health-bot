@@ -185,6 +185,38 @@ class AutoMergePolicyTest(unittest.TestCase):
         self.assertFalse(decision["should_merge"])
         self.assertIn("pull request has merge conflicts", decision["reasons"])
 
+    def test_merge_decision_allows_behind_merge_state(self) -> None:
+        pr = {
+            "isDraft": True,
+            "headRefName": "codex/example",
+            "baseRefName": "main",
+            "mergeStateStatus": "BEHIND",
+            "statusCheckRollup": [
+                {
+                    "name": "test",
+                    "workflowName": "CI",
+                    "status": "COMPLETED",
+                    "conclusion": "SUCCESS",
+                },
+                {
+                    "name": "redteam-review",
+                    "workflowName": "Redteam Review",
+                    "status": "COMPLETED",
+                    "conclusion": "SUCCESS",
+                },
+            ],
+        }
+        guard_report = {"passed": True, "auto_merge_allowed": True}
+
+        decision = merge_decision.decide(
+            pr,
+            guard_report,
+            required_checks=["test", "redteam-review"],
+        )
+
+        self.assertTrue(decision["should_merge"])
+        self.assertEqual([], decision["reasons"])
+
     def test_merge_decision_requires_clean_merge_state(self) -> None:
         pr = {
             "isDraft": True,
@@ -215,7 +247,7 @@ class AutoMergePolicyTest(unittest.TestCase):
         )
 
         self.assertFalse(decision["should_merge"])
-        self.assertIn("pull request merge state is UNKNOWN; expected CLEAN", decision["reasons"])
+        self.assertIn("pull request merge state is UNKNOWN; expected CLEAN or BEHIND", decision["reasons"])
 
 
 if __name__ == "__main__":
