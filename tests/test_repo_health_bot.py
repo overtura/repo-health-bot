@@ -28,6 +28,30 @@ class RepoHealthBotTest(unittest.TestCase):
             self.assertEqual(len(report.todo_hits), 1)
             self.assertEqual(report.todo_hits[0].path, "README.md")
 
+    def test_analyze_repository_skips_default_ignored_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tmp_path = Path(temp_dir)
+            source_dir = tmp_path / "src"
+            source_dir.mkdir()
+            (tmp_path / "README.md").write_text("# Demo\n", encoding="utf-8")
+            (source_dir / "app.py").write_text("print('ok')\n# TODO: keep this\n", encoding="utf-8")
+
+            ignored_files = [
+                tmp_path / ".git" / "HEAD",
+                source_dir / "node_modules" / "package" / "index.js",
+                source_dir / "__pycache__" / "app.py",
+            ]
+            for path in ignored_files:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("TODO: ignore this file\n", encoding="utf-8")
+
+            report = analyze_repository(tmp_path)
+
+            self.assertEqual(report.file_count, 2)
+            self.assertEqual(report.text_file_count, 2)
+            self.assertEqual(report.line_count, 3)
+            self.assertEqual([hit.path for hit in report.todo_hits], ["src/app.py"])
+
     def test_to_markdown_includes_summary(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             tmp_path = Path(temp_dir)
