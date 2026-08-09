@@ -1,6 +1,9 @@
 import importlib.util
+import io
 import sys
+import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
 
 
@@ -20,6 +23,16 @@ def load_script(name: str):
 guard = load_script("auto_merge_guard")
 redteam = load_script("redteam_review")
 merge_decision = load_script("merge_decision")
+
+
+def cli_error(module: object, argv: list[str]) -> tuple[int, str]:
+    stderr = io.StringIO()
+    with redirect_stderr(stderr):
+        try:
+            module.main(argv)
+        except SystemExit as exc:
+            return int(exc.code), stderr.getvalue()
+    raise AssertionError("expected CLI command to exit with an error")
 
 
 class AutoMergePolicyTest(unittest.TestCase):
@@ -248,6 +261,28 @@ class AutoMergePolicyTest(unittest.TestCase):
 
         self.assertFalse(decision["should_merge"])
         self.assertIn("pull request merge state is UNKNOWN; expected CLEAN or BEHIND", decision["reasons"])
+
+    def test_merge_decision_reports_missing_json_input_without_traceback(self) -> None:
+        code, stderr = cli_error(
+            merge_decision,
+            ["--pr-json", "missing-pr.json", "--guard-report", "missing-guard.json"],
+        )
+
+        self.assertEqual(2, code)
+        self.assertIn("--pr-json: file not found: missing-pr.json", stderr)
+        self.assertNotIn("Traceback", stderr)
+
+    def test_redteam_reports_invalid_guard_report_json_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            guard_report = Path(tmp_dir) / "guard.json"
+            guard_report.write_text("{bad json", encoding="utf-8")
+
+            code, stderr = cli_error(redteam, ["--guard-report", str(guard_report)])
+
+        self.assertEqual(2, code)
+        self.assertIn("--guard-report: invalid JSON", stderr)
+        self.assertIn("line 1, column 2", stderr)
+        self.assertNotIn("Traceback", stderr)
 
 
 if __name__ == "__main__":

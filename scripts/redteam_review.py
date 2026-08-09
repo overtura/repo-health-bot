@@ -180,9 +180,32 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def load_json_object(parser: argparse.ArgumentParser, path_value: str, option_name: str) -> dict[str, Any]:
+    path = Path(path_value)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        parser.error(f"{option_name}: file not found: {path}")
+    except IsADirectoryError:
+        parser.error(f"{option_name}: expected a JSON file but got a directory: {path}")
+    except OSError as exc:
+        parser.error(f"{option_name}: cannot read file {path}: {exc}")
+    except UnicodeDecodeError as exc:
+        parser.error(f"{option_name}: cannot decode {path} as UTF-8: {exc}")
+    except json.JSONDecodeError as exc:
+        parser.error(
+            f"{option_name}: invalid JSON in {path}: line {exc.lineno}, column {exc.colno}: {exc.msg}"
+        )
+
+    if not isinstance(data, dict):
+        parser.error(f"{option_name}: expected a JSON object in {path}")
+    return data
+
+
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    guard_report = json.loads(Path(args.guard_report).read_text(encoding="utf-8"))
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    guard_report = load_json_object(parser, args.guard_report, "--guard-report")
     diff_text = latest_diff(args.base_ref, args.head_ref)
     review = build_review(guard_report, diff_text)
 
