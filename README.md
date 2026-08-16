@@ -138,7 +138,7 @@ Level 3에서도 다음 안전장치는 유지합니다.
 - `main` 직접 push 대신 PR 기반으로 동작합니다.
 - `Auto Merge Guard`는 별도 GitHub check가 아니라 `scripts/auto_merge_guard.py`가 만드는 JSON/Markdown 정책 평가입니다.
 - `Redteam Review` check가 guard 결과와 diff 위험을 승인해야 합니다.
-- `scripts/merge_decision.py`가 필수 check, guard의 `auto_merge_allowed`, PR merge 상태를 마지막으로 확인합니다.
+- `scripts/merge_decision.py`가 필수 check, guard의 `auto_merge_allowed`, PR merge 상태를 마지막으로 확인합니다. `mergeStateStatus`가 `BEHIND`이면 바로 merge하지 않고 PR branch를 먼저 업데이트합니다.
 - `policies/auto_merge.json`의 파일 수, diff 크기, 금지 경로 정책을 통과해야 합니다.
 - `.github/workflows/**`, redteam/guard 스크립트, auto-merge 정책 자체를 바꾸는 PR은 자동 merge하지 않고 수동 검토 대상으로 남깁니다.
 - secret 파일이나 credential로 보이는 변경은 redteam에서 차단합니다.
