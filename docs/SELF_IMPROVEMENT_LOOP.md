@@ -99,13 +99,13 @@ gh -R overtura/repo-health-bot pr checks PR_NUMBER
 
 ## Level 3 자동 merge 모드
 
-테스트 repo에서는 Level 3 자동 merge 모드를 사용할 수 있습니다. 이 모드에서는 PR을 사람이 직접 merge하지 않아도, 아래 조건을 모두 만족하면 GitHub Actions가 squash merge를 시도합니다.
+테스트 repo에서는 Level 3 자동 merge 모드를 사용할 수 있습니다. 이 모드에서는 PR을 사람이 직접 merge하지 않아도, 아래 조건을 모두 만족하고 PR 상태가 최종적으로 `CLEAN`이면 GitHub Actions가 squash merge를 시도합니다. 같은 검증을 통과했더라도 `BEHIND` 상태에서는 merge하지 않고 PR branch update만 수행합니다.
 
 1. `CI / test` check가 성공합니다.
 2. `Redteam Review / redteam-review` check가 성공합니다.
 3. `scripts/auto_merge_guard.py`가 hard failure를 찾지 않습니다.
 4. guard 결과의 `auto_merge_allowed`가 `true`입니다.
-5. PR의 GitHub `mergeStateStatus`가 `CLEAN`입니다.
+5. PR의 GitHub `mergeStateStatus`가 `CLEAN`입니다. `BEHIND`는 최종 merge 조건이 아니라, 같은 검증을 통과한 뒤 PR branch update만 수행하는 보류 상태입니다.
 
 Level 3 gate는 다음 순서로 평가됩니다.
 
@@ -114,7 +114,9 @@ Level 3 gate는 다음 순서로 평가됩니다.
 3. guard의 `hard_failures`가 있으면 정책 평가가 실패합니다. `manual_reasons`가 있으면 guard 자체는 실행되지만 `auto_merge_allowed`가 `false`가 되어 자동 merge 대상에서 빠집니다.
 4. `scripts/redteam_review.py`가 guard 결과와 diff를 다시 보고 `Redteam Review / redteam-review` check를 만듭니다.
 5. `Auto Merge` workflow가 `CI` 또는 `Redteam Review` 완료 이벤트에서 다시 PR 상태를 읽고 guard를 재실행한 뒤, `scripts/merge_decision.py`에 `test`와 `redteam-review`를 필수 check로 넘깁니다.
-6. `merge_decision.py`가 필수 check 성공, guard의 `passed`와 `auto_merge_allowed`, `mergeStateStatus == CLEAN`을 모두 만족할 때만 `should_merge: true`를 냅니다.
+6. `merge_decision.py`가 필수 check 성공, guard의 `passed`와 `auto_merge_allowed`, `mergeStateStatus`가 `CLEAN` 또는 `BEHIND`임을 모두 만족할 때만 workflow의 자동 처리 단계로 넘깁니다. 여기서 `BEHIND`는 squash merge 승인이 아니라 branch update 승인입니다.
+7. `mergeStateStatus`가 `BEHIND`이면 workflow가 `gh pr update-branch`를 실행하고 종료합니다. 업데이트된 PR은 새 CI와 redteam check가 끝난 뒤 다음 `Auto Merge` 실행에서 다시 평가됩니다.
+8. `mergeStateStatus`가 `CLEAN`이면 workflow가 `gh pr merge --squash --delete-branch`를 실행합니다. `DIRTY` 같은 충돌 상태나 알 수 없는 상태는 merge 대상에서 제외됩니다.
 
 Level 3 정책은 넓은 코드 변경을 허용하지만, 자동 merge 시스템 자체를 바꾸는 변경은 자동으로 merge하지 않습니다. 다음 경로는 redteam과 CI를 통과해도 수동 검토 대상으로 분류됩니다.
 
