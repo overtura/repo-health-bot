@@ -37,7 +37,12 @@ def cli_error(module: object, argv: list[str]) -> tuple[int, str]:
 
 class AutoMergePolicyTest(unittest.TestCase):
     def test_guard_denies_secret_file(self) -> None:
-        files = [guard.ChangedFile(path=".env", additions=1, deletions=0)]
+        files = [
+            guard.ChangedFile(path=".env", additions=1, deletions=0),
+            guard.ChangedFile(path=".env.local", additions=1, deletions=0),
+            guard.ChangedFile(path="config/.env", additions=1, deletions=0),
+            guard.ChangedFile(path="services/api/.env.local", additions=1, deletions=0),
+        ]
 
         report = guard.evaluate_policy(
             files=files,
@@ -48,7 +53,13 @@ class AutoMergePolicyTest(unittest.TestCase):
 
         self.assertFalse(report["passed"])
         self.assertFalse(report["auto_merge_allowed"])
-        self.assertIn("denied pattern", report["hard_failures"][0])
+        self.assertIn(".env matches denied pattern .env", report["hard_failures"])
+        self.assertIn(".env.local matches denied pattern .env.*", report["hard_failures"])
+        self.assertIn("config/.env matches denied pattern **/.env", report["hard_failures"])
+        self.assertIn(
+            "services/api/.env.local matches denied pattern **/.env.*",
+            report["hard_failures"],
+        )
 
     def test_guard_denies_root_sensitive_file_patterns(self) -> None:
         files = [
