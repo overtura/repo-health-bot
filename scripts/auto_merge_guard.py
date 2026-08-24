@@ -20,6 +20,8 @@ DEFAULT_POLICY = {
     "deny_patterns": [
         ".env",
         ".env.*",
+        "**/.env",
+        "**/.env.*",
         "**/*.pem",
         "**/*.key",
         "**/*.p12",
