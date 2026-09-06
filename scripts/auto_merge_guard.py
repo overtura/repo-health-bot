@@ -208,14 +208,56 @@ def write_markdown(report: dict[str, Any], path: Path) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Evaluate whether a PR is safe for auto-merge.")
-    parser.add_argument("--base-ref", default="origin/main")
-    parser.add_argument("--head-ref", default="HEAD")
-    parser.add_argument("--base-branch", default="main")
-    parser.add_argument("--head-branch", default="")
-    parser.add_argument("--policy", default="policies/auto_merge.json")
-    parser.add_argument("--output", default="")
-    parser.add_argument("--summary-md", default="")
+    parser = argparse.ArgumentParser(
+        description="Evaluate the current pull request diff against the Level 3 auto-merge policy.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""examples:
+  python scripts/auto_merge_guard.py --base-ref origin/main --head-ref HEAD
+  python scripts/auto_merge_guard.py --head-branch codex/example --output guard.json --summary-md guard.md
+""",
+    )
+    parser.add_argument(
+        "--base-ref",
+        default="origin/main",
+        metavar="REF",
+        help="Base git ref used for the three-dot diff (default: origin/main).",
+    )
+    parser.add_argument(
+        "--head-ref",
+        default="HEAD",
+        metavar="REF",
+        help="Head git ref compared with --base-ref (default: HEAD).",
+    )
+    parser.add_argument(
+        "--base-branch",
+        default="main",
+        metavar="NAME",
+        help="Target branch name checked against allowed_base_branches (default: main).",
+    )
+    parser.add_argument(
+        "--head-branch",
+        default="",
+        metavar="NAME",
+        help="Source branch name checked against auto_merge_head_prefixes.",
+    )
+    parser.add_argument(
+        "--policy",
+        default="policies/auto_merge.json",
+        metavar="PATH",
+        help="Policy JSON path; if missing, built-in defaults are used (default: policies/auto_merge.json).",
+    )
+    parser.add_argument(
+        "--output",
+        default="",
+        metavar="PATH",
+        help="Optional path for the JSON report; stdout is always written.",
+    )
+    parser.add_argument(
+        "--summary-md",
+        default="",
+        metavar="PATH",
+        help="Optional path for a Markdown summary report.",
+    )
     return parser
 
 

@@ -295,6 +295,31 @@ class AutoMergePolicyTest(unittest.TestCase):
         self.assertIn("line 1, column 2", stderr)
         self.assertNotIn("Traceback", stderr)
 
+    def test_guard_help_describes_inputs_and_examples(self) -> None:
+        help_text = guard.build_parser().format_help()
+
+        self.assertIn("Level 3 auto-merge policy", help_text)
+        self.assertIn("--policy PATH", help_text)
+        self.assertIn("if missing, built-in defaults are used", help_text)
+        self.assertIn("python scripts/auto_merge_guard.py --base-ref origin/main", help_text)
+
+    def test_redteam_help_describes_guard_report_and_outputs(self) -> None:
+        help_text = redteam.build_parser().format_help()
+
+        self.assertIn("deterministic Level 3 risk signals", help_text)
+        self.assertIn("--guard-report PATH", help_text)
+        self.assertIn("JSON object produced by scripts/auto_merge_guard.py", help_text)
+        self.assertIn("--summary-md PATH", help_text)
+
+    def test_merge_decision_help_describes_pr_json_and_required_checks(self) -> None:
+        help_text = merge_decision.build_parser().format_help()
+
+        self.assertIn("Combine PR metadata", help_text)
+        self.assertIn("--pr-json PATH", help_text)
+        self.assertIn("--required-check NAME", help_text)
+        self.assertIn("Repeatable required successful check name", help_text)
+        self.assertIn("python scripts/merge_decision.py --pr-json pr.json", help_text)
+
 
 if __name__ == "__main__":
     unittest.main()
