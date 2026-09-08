@@ -53,11 +53,39 @@ def decide(pr: dict[str, Any], guard: dict[str, Any], required_checks: list[str]
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Decide whether auto-merge may run.")
-    parser.add_argument("--pr-json", required=True)
-    parser.add_argument("--guard-report", required=True)
-    parser.add_argument("--required-check", action="append", default=[])
-    parser.add_argument("--output", default="")
+    parser = argparse.ArgumentParser(
+        description="Combine PR metadata, guard output, and required checks into a merge decision.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""examples:
+  python scripts/merge_decision.py --pr-json pr.json --guard-report guard.json --required-check test --required-check redteam-review
+  python scripts/merge_decision.py --pr-json pr.json --guard-report guard.json --required-check "CI / test" --output decision.json
+""",
+    )
+    parser.add_argument(
+        "--pr-json",
+        required=True,
+        metavar="PATH",
+        help="GitHub PR JSON object with statusCheckRollup and mergeStateStatus fields.",
+    )
+    parser.add_argument(
+        "--guard-report",
+        required=True,
+        metavar="PATH",
+        help="JSON object produced by scripts/auto_merge_guard.py.",
+    )
+    parser.add_argument(
+        "--required-check",
+        action="append",
+        default=[],
+        metavar="NAME",
+        help="Repeatable required successful check name; accepts raw or 'Workflow / Check' names.",
+    )
+    parser.add_argument(
+        "--output",
+        default="",
+        metavar="PATH",
+        help="Optional path for the JSON decision; stdout is always written.",
+    )
     return parser
 
 

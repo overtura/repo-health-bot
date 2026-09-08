@@ -171,12 +171,44 @@ def write_markdown(review: dict[str, Any], path: Path) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run the required redteam review gate.")
-    parser.add_argument("--guard-report", required=True)
-    parser.add_argument("--base-ref", default="origin/main")
-    parser.add_argument("--head-ref", default="HEAD")
-    parser.add_argument("--output", default="")
-    parser.add_argument("--summary-md", default="")
+    parser = argparse.ArgumentParser(
+        description="Review the guard report and latest diff for deterministic Level 3 risk signals.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""examples:
+  python scripts/redteam_review.py --guard-report guard.json
+  python scripts/redteam_review.py --guard-report guard.json --base-ref origin/main --head-ref HEAD --output redteam.json --summary-md redteam.md
+""",
+    )
+    parser.add_argument(
+        "--guard-report",
+        required=True,
+        metavar="PATH",
+        help="JSON object produced by scripts/auto_merge_guard.py.",
+    )
+    parser.add_argument(
+        "--base-ref",
+        default="origin/main",
+        metavar="REF",
+        help="Base git ref used for the reviewed diff (default: origin/main).",
+    )
+    parser.add_argument(
+        "--head-ref",
+        default="HEAD",
+        metavar="REF",
+        help="Head git ref compared with --base-ref (default: HEAD).",
+    )
+    parser.add_argument(
+        "--output",
+        default="",
+        metavar="PATH",
+        help="Optional path for the JSON review; stdout is always written.",
+    )
+    parser.add_argument(
+        "--summary-md",
+        default="",
+        metavar="PATH",
+        help="Optional path for a Markdown review summary.",
+    )
     return parser
 
 
