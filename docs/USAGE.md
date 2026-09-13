@@ -102,4 +102,11 @@ PowerShell 검증 스크립트도 사용할 수 있습니다.
 - `python` 명령이 Python 3.10 이상을 가리키는지 확인합니다. Windows에서 여러 Python이 설치되어 있으면 `py -3.10`처럼 버전을 지정해 실행할 수 있습니다.
 - `ModuleNotFoundError`가 나면 저장소 루트에서 명령을 실행 중인지 확인하고, 필요하면 `python -m pip install -e .`로 다시 설치합니다.
 - PowerShell 스크립트 실행이 차단되면 현재 터미널에서만 `Set-ExecutionPolicy -Scope Process Bypass`를 실행한 뒤 다시 시도합니다.
-- 테스트가 임시 파일 경로 문제로 실패하면 `TEMP`와 `TMP`가 쓰기 가능한 로컬 폴더를 가리키는지 확인합니다.
+- 테스트가 임시 파일 경로 문제로 실패하면 `TEMP`와 `TMP`가 쓰기 가능한 로컬 폴더를 가리키는지 확인합니다. Windows PowerShell에서는 현재 터미널에만 임시 폴더를 다시 지정한 뒤 테스트할 수 있습니다.
+
+```powershell
+$env:TEMP = Join-Path $PWD ".tmp"
+$env:TMP = $env:TEMP
+New-Item -ItemType Directory -Force $env:TEMP | Out-Null
+python -B -m unittest discover -s tests
+```
