@@ -52,6 +52,29 @@ class RepoHealthBotTest(unittest.TestCase):
             self.assertEqual(report.line_count, 3)
             self.assertEqual([hit.path for hit in report.todo_hits], ["src/app.py"])
 
+    def test_analyze_repository_skips_unreadable_text_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            tmp_path = Path(temp_dir)
+            source_dir = tmp_path / "src"
+            source_dir.mkdir()
+            (tmp_path / "README.md").write_text("# Demo\n", encoding="utf-8")
+            (source_dir / "ok.py").write_text("TODO: keep this\n", encoding="utf-8")
+            (source_dir / "broken.py").write_text("TODO: skip this\n", encoding="utf-8")
+            original_read_text = Path.read_text
+
+            def read_text_or_raise(path: Path, *args: object, **kwargs: object) -> str:
+                if path.name == "broken.py":
+                    raise OSError("permission denied")
+                return original_read_text(path, *args, **kwargs)
+
+            with patch.object(Path, "read_text", autospec=True, side_effect=read_text_or_raise):
+                report = analyze_repository(tmp_path)
+
+            self.assertEqual(report.file_count, 3)
+            self.assertEqual(report.text_file_count, 2)
+            self.assertEqual(report.line_count, 2)
+            self.assertEqual([hit.path for hit in report.todo_hits], ["src/ok.py"])
+
     def test_to_markdown_includes_summary(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             tmp_path = Path(temp_dir)
