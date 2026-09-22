@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from dataclasses import asdict, dataclass
@@ -77,9 +78,12 @@ def should_ignore(path: Path) -> bool:
 
 def iter_files(root: Path) -> list[Path]:
     files: list[Path] = []
-    for path in root.rglob("*"):
-        if path.is_file() and not should_ignore(path.relative_to(root)):
-            files.append(path)
+    for directory, subdirectories, filenames in os.walk(root):
+        subdirectories[:] = [name for name in subdirectories if name not in DEFAULT_IGNORES]
+        for name in filenames:
+            path = Path(directory) / name
+            if path.is_file() and not should_ignore(path.relative_to(root)):
+                files.append(path)
     return sorted(files)
 
 
