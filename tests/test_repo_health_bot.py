@@ -1,6 +1,7 @@
 import contextlib
 import io
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -74,6 +75,26 @@ class RepoHealthBotTest(unittest.TestCase):
             self.assertEqual(report.text_file_count, 2)
             self.assertEqual(report.line_count, 2)
             self.assertEqual([hit.path for hit in report.todo_hits], ["src/ok.py"])
+
+    def test_scan_does_not_enter_ignored_directories(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            (root / "src" / "node_modules" / "package").mkdir(parents=True)
+            (root / "src" / "app.py").write_text("# TODO: keep\n", encoding="utf-8")
+            original_scandir = os.scandir
+            visited = []
+
+            def track_scandir(path):
+                visited.append(Path(path))
+                return original_scandir(path)
+
+            with patch("os.scandir", side_effect=track_scandir):
+                report = analyze_repository(root)
+
+            self.assertEqual(report.file_count, 1)
+            self.assertEqual([hit.path for hit in report.todo_hits], ["src/app.py"])
+            self.assertNotIn(root / "src" / "node_modules", visited)
+            self.assertNotIn(root / "src" / "node_modules" / "package", visited)
 
     def test_to_markdown_includes_summary(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
